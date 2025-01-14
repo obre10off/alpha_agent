@@ -1,0 +1,16 @@
+{
+  "name": "my-agentic-project",
+  "version": "1.0.0",
+  "description": "A simple agentic application using OpenAI and Composio.",
+  "type": "module",
+  "main": "agentic.js",
+  "scripts": {
+    "start": "node agentic.js"
+  },
+  "dependencies": {
+    "openai": "^4.24.1",
+    "composio-core": "^0.1.1"
+  },
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT"
+}
