@@ -6,7 +6,7 @@ from composio_llamaindex import Action, ComposioToolSet
 
 dotenv.load_dotenv()
 
-llm = OpenAI(model="gpt-4o")
+llm = OpenAI(model="gpt-4o-mini")
 
 composio_toolset = ComposioToolSet(api_key="85zq31ck6okzfoqknx89rk")
 tools = composio_toolset.get_tools(actions=['HACKERNEWS_SEARCH_POSTS'])
@@ -34,7 +34,7 @@ print("Response:", response)
 
 dotenv.load_dotenv()
 
-llm = OpenAI(model="gpt-4")
+llm = OpenAI(model="gpt-4o-mini")
 
 composio_toolset = ComposioToolSet(api_key="85zq31ck6okzfoqknx89rk")
 tools = composio_toolset.get_tools(actions=['HACKERNEWS_GET_TODAYS_POSTS'])
