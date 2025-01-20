@@ -1,0 +1,56 @@
+prd_template: |
+  # {title}
+
+  ## Overview
+  {overview}
+
+  ## Problem Statement
+  {problem_statement}
+
+  ## Proposed Solution
+  {solution}
+
+  ## Key Features
+  {features}
+
+  ## Technical Requirements
+  {technical_requirements}
+
+  ## Market Analysis
+  {market_analysis}
+
+  ## Implementation Timeline
+  {timeline}
+
+  ## Resources Required
+  {resources}
+
+  ## Success Metrics
+  {metrics}
+
+  ## Source
+  Original discussion: {source_url}
+  Found on: {platform}
+  Date: {date}
+
+email_template: |
+  Subject: AI Agent Opportunity Alert: {title}
+
+  Dear {recipient},
+
+  We've identified a promising AI agent opportunity that matches your interests:
+
+  Title: {title}
+  Platform: {platform}
+  Relevance Score: {relevance_score}/10
+
+  Quick Summary:
+  {summary}
+
+  Key Points:
+  {key_points}
+
+  A detailed PRD has been attached to this email.
+
+  Best regards,
+  AI Alpha Agent 

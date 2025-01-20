@@ -1,0 +1,30 @@
+reddit:
+  subreddits:
+    - "artificial"
+    - "MachineLearning"
+    - "AutoGPT"
+    - "LocalLLaMA"
+  keywords:
+    - "agent"
+    - "AI agent"
+    - "autonomous"
+    - "LLM"
+    - "AGI"
+  min_score: 10
+  time_filter: "week"
+
+hackernews:
+  keywords:
+    - "AI agent"
+    - "autonomous AI"
+    - "LLM agents"
+    - "AGI"
+  min_points: 5
+  time_filter: "week"
+
+filters:
+  relevance_threshold: 0.7
+  max_posts_per_source: 10
+  exclude_domains:
+    - "example.com"
+    - "spam-site.com" 
