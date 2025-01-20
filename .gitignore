@@ -9,3 +9,5 @@ notes.txt
 
 trendfinder.py
 agent.py
+
+send_email.py
