@@ -1,9 +1,10 @@
 reddit:
   subreddits:
     - "artificial"
-    - "MachineLearning"
-    - "AutoGPT"
     - "LocalLLaMA"
+    - "ChatGPTCoding"
+    - "ArtificialInteligence"
+    
   keywords:
     - "agent"
     - "AI agent"
