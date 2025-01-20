@@ -6,3 +6,6 @@ __pycache__
 documentation/instructions.md
 
 notes.txt
+
+trendfinder.py
+agent.py
