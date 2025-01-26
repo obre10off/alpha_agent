@@ -3,11 +3,11 @@ import asyncio
 import yaml
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from src.collectors.reddit import RedditCollector
-from src.collectors.hackernews import HackerNewsCollector
-from src.analysis.filter import ContentFilter
-from src.templates.prd import PRDGenerator
-from src.delivery.gmail import EmailDelivery
+from collectors.reddit import RedditCollector
+from collectors.hackernews import HackerNewsCollector
+from analysis.filter import ContentFilter
+from templates.prd import PRDGenerator
+from delivery.gmail import GmailDelivery
 
 class AIAlphaAgent:
     """Main application class for AI Alpha Agent."""
@@ -25,9 +25,9 @@ class AIAlphaAgent:
         self.hackernews_collector = HackerNewsCollector(self.config["hackernews"])
         self.content_filter = ContentFilter(self.config["filters"])
         self.prd_generator = PRDGenerator("config/templates.yaml")
-        self.email_delivery = EmailDelivery(
-            "config/templates.yaml",
-            os.getenv("EMAIL_RECIPIENT")
+        self.email_delivery = GmailDelivery(
+            api_key=os.getenv("COMPOSIO_API_KEY"),
+            config_path="config/templates.yaml"
         )
         
     async def process_content(self, content: dict) -> bool:

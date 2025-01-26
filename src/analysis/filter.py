@@ -1,19 +1,103 @@
 from typing import List, Dict, Any
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from llama_index.llms.openai import OpenAI
+import logging
 
 class ContentFilter:
-    """Filter and analyze content for relevance."""
+    """Filter and score content for relevance."""
     
     def __init__(self, config: Dict[str, Any]):
-        """Initialize the content filter."""
+        """Initialize with configuration."""
         self.config = config
-        self.llm = OpenAI(model="gpt-4-turbo-preview")  # Using a more capable model
+        self.keywords = [
+            "ai agent", "autonomous ai", "llm agent", "ai assistant",
+            "autonomous agent", "ai system", "agent architecture",
+            "multi-agent", "agent framework"
+        ]
+        logging.basicConfig(level=logging.DEBUG)
+        self.logger = logging.getLogger(__name__)
+        self.llm = OpenAI(model="gpt-4o-mini")
+        
+    async def filter_content(self, posts: List[Dict[str, Any]], source: str = "") -> List[Dict[str, Any]]:
+        """Filter posts based on relevance and freshness."""
+        if not posts:
+            return []
+            
+        filtered = []
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.config.get("max_age_days", 30))
+        
+        for post in posts:
+            self.logger.debug(f"Processing post: {post.get('title', 'No title')}")
+            
+            # Basic criteria check
+            if not self._meets_basic_criteria(post, cutoff_date):
+                self.logger.debug("Failed basic criteria")
+                continue
+                
+            # Calculate relevance
+            relevance_score = self._calculate_relevance(post)
+            self.logger.debug(f"Relevance score: {relevance_score}")
+            
+            # If post meets threshold, add it
+            if relevance_score >= self.config.get("min_relevance_score", 0.3):  # Lowered threshold
+                post["relevance_score"] = relevance_score
+                filtered.append(post)
+                self.logger.debug("Post added to filtered list")
+            
+        self.logger.debug(f"Total posts filtered: {len(filtered)}")
+        return filtered[:self.config.get("max_posts_per_source", 3)]
+        
+    def _meets_basic_criteria(self, post: Dict[str, Any], cutoff_date: datetime) -> bool:
+        """Check if post meets basic filtering criteria."""
+        try:
+            # Check creation date
+            created_utc = post.get("created_utc")
+            if created_utc:
+                created_at = datetime.fromtimestamp(created_utc, tz=timezone.utc)
+                self.logger.debug(f"Post date: {created_at}, Cutoff date: {cutoff_date}")
+                if created_at < cutoff_date:
+                    self.logger.debug("Post too old")
+                    return False
+            
+            # Check score/points
+            score = post.get("score", post.get("points", 0))
+            self.logger.debug(f"Post score: {score}")
+            if score < self.config.get("min_points", 10):  # Lowered threshold
+                self.logger.debug("Score too low")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error in basic criteria check: {e}")
+            return False
+            
+    def _calculate_relevance(self, post: Dict[str, Any]) -> float:
+        """Calculate relevance score for a post."""
+        score = 0.0
+        content = f"{post.get('title', '')} {post.get('text', '')}".lower()
+        
+        # Keyword matching
+        keyword_matches = 0
+        for keyword in self.keywords:
+            if keyword in content:
+                keyword_matches += 1
+                self.logger.debug(f"Matched keyword: {keyword}")
+        
+        # Calculate scores
+        keyword_score = min(keyword_matches * 0.2, 0.6)
+        title_score = 0.3 if any(kw in post.get('title', '').lower() for kw in self.keywords) else 0
+        
+        # Combine scores
+        score = keyword_score + title_score
+        
+        self.logger.debug(f"Final relevance score: {score}")
+        return min(score, 1.0)
         
     async def analyze_relevance(self, content: Dict[str, Any]) -> float:
         """Analyze content relevance using LLM with structured criteria."""
         # First apply basic filtering
-        if not self._meets_basic_criteria(content):
+        if not self._meets_basic_criteria(content, datetime.now(timezone.utc)):
             return 0.0
             
         prompt = """
@@ -69,26 +153,6 @@ class ContentFilter:
             print(f"Error analyzing content: {e}")
             return 0.0
             
-    def _meets_basic_criteria(self, content: Dict[str, Any]) -> bool:
-        """Apply basic filtering criteria before LLM analysis."""
-        # Skip if content is too old (e.g., older than 30 days)
-        if content.get('created_utc'):
-            age_days = (datetime.now(timezone.utc).timestamp() - content['created_utc']) / 86400
-            if age_days > self.config.get('max_age_days', 30):
-                return False
-        
-        # Skip if engagement is too low
-        min_score = self.config.get('min_score', 5)
-        if content.get('score', 0) < min_score:
-            return False
-            
-        # Skip if content is too short
-        min_length = self.config.get('min_content_length', 100)
-        if len(self._get_cleaned_content(content)) < min_length:
-            return False
-            
-        return True
-        
     def _get_cleaned_content(self, content: Dict[str, Any]) -> str:
         """Extract and clean the main content."""
         # For Reddit
@@ -109,28 +173,4 @@ class ContentFilter:
         """Format Unix timestamp to readable date."""
         if not timestamp:
             return "No date"
-        return datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime('%Y-%m-%d')
-        
-    async def filter_content(self, content_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Filter content based on relevance threshold and return structured results."""
-        filtered = []
-        
-        for content in content_list:
-            if not self._meets_basic_criteria(content):
-                continue
-                
-            relevance = await self.analyze_relevance(content)
-            if relevance >= self.config["relevance_threshold"]:
-                filtered_content = {
-                    "title": content.get('title', ''),
-                    "url": content.get('url', ''),
-                    "source": content.get('source', 'unknown'),
-                    "date": self._format_date(content.get('created_utc')),
-                    "relevance_score": relevance,
-                    "summary": self._get_cleaned_content(content)[:200] + "..."  # Short preview
-                }
-                filtered.append(filtered_content)
-                
-        # Sort by relevance score and limit results
-        filtered.sort(key=lambda x: x['relevance_score'], reverse=True)
-        return filtered[:self.config["max_posts_per_source"]] 
+        return datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime('%Y-%m-%d') 

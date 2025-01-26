@@ -2,7 +2,7 @@ import dotenv
 from llama_index.llms.openai import OpenAI
 from llama_index.core.llms import ChatMessage
 from llama_index.core.agent import FunctionCallingAgentWorker
-from composio_llamaindex import Action, ComposioToolSet
+from composio_llamaindex import ComposioToolSet
 from typing import List, Dict
 dotenv.load_dotenv()
 
