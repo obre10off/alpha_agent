@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from src.delivery.gmail import GmailDelivery
 from src.analysis.filter import ContentFilter
+from src.templates.prd import PRDGenerator
 import logging
 from datetime import datetime
 
@@ -16,20 +17,51 @@ async def test_filter_and_email():
         # Load environment variables
         load_dotenv()
         
-        # Test data with more detailed content
+        # Test data with detailed, realistic content
         test_posts = [
             {
-                "title": "AI Agent Framework",
-                "text": "Building autonomous AI agents with LLMs",
-                "created_utc": int(datetime.now().timestamp()),  # Current timestamp
-                "score": 100,
-                "points": 100,  # Added points explicitly
-                "url": "https://github.com/example/ai-agent",
-                "source": "Reddit"
+                "title": "AutoGPT-Next: Advanced Multi-Agent Framework",
+                "text": """
+                Just released AutoGPT-Next, a framework for building autonomous AI agents with advanced capabilities.
+                
+                Key Features:
+                - Multi-agent orchestration with built-in communication protocols
+                - Memory management system with vector storage
+                - Tool integration framework for API connections
+                - Safety mechanisms and monitoring
+                - Scalable architecture for enterprise deployment
+                
+                The framework solves common issues in agent development like context management,
+                tool integration, and inter-agent communication. It's built on top of LangChain
+                and supports multiple LLM providers.
+                
+                Technical Stack:
+                - Python 3.9+
+                - FastAPI backend
+                - Redis for memory management
+                - Docker support
+                - Prometheus metrics
+                
+                Already being used by several companies for automation and research.
+                Looking for contributors and feedback from the community.
+                """,
+                "created_utc": int(datetime.now().timestamp()),
+                "score": 850,
+                "points": 850,
+                "url": "https://github.com/example/autogpt-next",
+                "source": "Reddit",
+                "platform": "Reddit",
+                "key_points": [
+                    "Advanced multi-agent orchestration",
+                    "Built-in memory management",
+                    "Enterprise-ready architecture",
+                    "Active community and corporate adoption",
+                    "Open source with MIT license"
+                ]
             }
         ]
         
-        # Initialize filter with very lenient config
+        # Initialize components
         filter_config = {
             "max_age_days": 30,
             "min_relevance_score": 0.1,
@@ -38,6 +70,7 @@ async def test_filter_and_email():
         }
         
         content_filter = ContentFilter(filter_config)
+        prd_generator = PRDGenerator("config/templates.yaml")
         
         # Test filtering
         print("\nTesting content filter...")
@@ -59,21 +92,8 @@ async def test_filter_and_email():
             # Test email delivery
             print("\nTesting email delivery...")
             for post in filtered_posts:
-                # Create a more detailed PRD
-                prd_content = f"""
-                # {post['title']}
-                
-                ## Overview
-                {post.get('text', 'No content available')}
-                
-                ## Key Points
-                {chr(10).join([f"- {point}" for point in post.get('key_points', [])])}
-                
-                ## Source Details
-                - Platform: {post.get('source', 'Unknown')}
-                - URL: {post.get('url', 'No URL available')}
-                - Score: {post.get('score', 0)}
-                """
+                # Generate full PRD using the template
+                prd_content = await prd_generator.generate_prd(post)
                 
                 # Send email
                 success = await gmail_delivery.send_email(post, prd_content)
