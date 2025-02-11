@@ -22,40 +22,6 @@ An autonomous system that monitors Reddit and HackerNews for innovative AI agent
   - HackerNews
   - Gmail (via Composio)
 
-### Deployment
-
-1. Pull and run with Docker:
-```bash
-docker pull ghcr.io/yourusername/ai-alpha-agent:latest
-docker run -d \
-  --name ai-alpha-agent \
-  -e OPENAI_API_KEY=your_key \
-  -e REDDIT_CLIENT_ID=your_id \
-  -e REDDIT_CLIENT_SECRET=your_secret \
-  -e REDDIT_USER_AGENT=your_agent \
-  -e COMPOSIO_API_KEY=your_key \
-  -e EMAIL_RECIPIENT=your_email@example.com \
-  ghcr.io/yourusername/ai-alpha-agent:latest
-```
-
-### Local Development
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/ai-alpha-agent.git
-cd ai-alpha-agent
-```
-
-2. Create and configure your `.env` file:
-```bash
-cp .env.example .env
-# Edit .env with your API keys and configuration
-```
-
-3. Build and run with Docker:
-```bash
-docker-compose up --build
-```
 
 ## 📝 Configuration
 

@@ -23,9 +23,28 @@ hackernews:
   min_points: 5
   time_filter: "week"
 
+github:
+  min_stars: 100
+  topics:
+    - "ai-agent"
+    - "autonomous-ai"
+    - "llm-agent"
+    - "ai-assistant"
+    - "agent-framework"
+  languages:
+    - "python"
+    - "typescript"
+    - "javascript"
+  max_repos: 5
+
 filters:
   relevance_threshold: 0.7
   max_posts_per_source: 10
   exclude_domains:
     - "example.com"
-    - "spam-site.com" 
+    - "spam-site.com"
+  max_repos_per_batch: 3
+  exclude_topics:
+    - "tutorial"
+    - "example"
+    - "demo" 

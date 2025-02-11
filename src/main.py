@@ -3,8 +3,7 @@ import asyncio
 import yaml
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from collectors.reddit import RedditCollector
-from collectors.hackernews import HackerNewsCollector
+from collectors.github import GitHubCollector
 from analysis.filter import ContentFilter
 from templates.prd import PRDGenerator
 from delivery.gmail import GmailDelivery
@@ -25,16 +24,13 @@ class AIAlphaAgent:
         with open("config/sources.yaml", "r") as f:
             self.config = yaml.safe_load(f)
             
-        # Initialize components with stricter filters
-        self.reddit_collector = RedditCollector(self.config["reddit"])
-        self.hackernews_collector = HackerNewsCollector(self.config["hackernews"])
+        # Initialize components
+        self.github_collector = GitHubCollector(self.config["github"])
         
-        # Stricter filtering criteria
+        # Content filtering
         self.content_filter = ContentFilter({
-            "max_age_days": 7,  # More recent content
-            "min_relevance_score": 0.6,  # Higher relevance requirement
-            "min_points": 100,  # Higher points threshold
-            "max_posts_per_source": 2  # Fewer posts
+            "min_relevance_score": 0.7,
+            "max_repos_per_batch": 3
         })
         
         self.prd_generator = PRDGenerator("config/templates.yaml")
@@ -44,9 +40,26 @@ class AIAlphaAgent:
         )
         
     async def process_content(self, content: dict) -> bool:
-        """Process a single piece of content."""
+        """Process a single repository."""
         try:
             self.logger.info(f"Generating PRD for: {content.get('title', 'Untitled')}")
+            
+            # Add repository details to content
+            content["key_points"] = [
+                f"Stars: {content.get('stars', 0)}",
+                f"Language: {content.get('language', 'Unknown')}",
+                f"Topics: {', '.join(content.get('topics', []))}",
+                f"Last updated: {content.get('updated_at', 'Unknown')}"
+            ]
+            
+            # Generate PRD using both description and README
+            content["text"] = f"""
+            Description: {content.get('text', '')}
+            
+            README:
+            {content.get('readme', '')}
+            """
+            
             prd_content = await self.prd_generator.generate_prd(content)
             
             self.logger.info("Sending email...")
@@ -63,33 +76,25 @@ class AIAlphaAgent:
             return False
             
     async def scan_and_process(self):
-        """Scan sources and process content."""
+        """Scan GitHub and process repositories."""
         try:
-            self.logger.info("Starting content scan...")
+            self.logger.info("Starting GitHub scan...")
             
-            # Collect content with limits
-            reddit_content = await self.reddit_collector.collect()
-            reddit_content = reddit_content[:5]  # Limit initial results
-            self.logger.info(f"Found {len(reddit_content)} Reddit posts")
+            # Collect repositories
+            repositories = await self.github_collector.collect()
+            self.logger.info(f"Found {len(repositories)} repositories")
             
-            hackernews_content = await self.hackernews_collector.collect()
-            hackernews_content = hackernews_content[:5]  # Limit initial results
-            self.logger.info(f"Found {len(hackernews_content)} HackerNews posts")
+            # Filter repositories
+            filtered_repos = await self.github_collector.filter_content(repositories)
+            self.logger.info(f"Filtered to {len(filtered_repos)} relevant repositories")
             
-            # Filter content
-            reddit_filtered = await self.content_filter.filter_content(reddit_content)
-            self.logger.info(f"Filtered to {len(reddit_filtered)} relevant Reddit posts")
+            # Take only the top repositories
+            top_repos = filtered_repos[:self.config["filters"]["max_repos_per_batch"]]
             
-            hackernews_filtered = await self.content_filter.filter_content(hackernews_content)
-            self.logger.info(f"Filtered to {len(hackernews_filtered)} relevant HackerNews posts")
-            
-            # Take only the top posts from each source
-            filtered_posts = (reddit_filtered + hackernews_filtered)[:2]
-            
-            # Process filtered content
-            for content in filtered_posts:
-                self.logger.info(f"Processing: {content.get('title', 'Untitled')}")
-                await self.process_content(content)
+            # Process each repository
+            for repo in top_repos:
+                self.logger.info(f"Processing repository: {repo.get('title', 'Untitled')}")
+                await self.process_content(repo)
                 
         except Exception as e:
             self.logger.error(f"Error in scan_and_process: {str(e)}")
@@ -98,13 +103,13 @@ async def run_agent():
     """Run the agent with scheduler."""
     agent = AIAlphaAgent()
     
-    # Set up scheduler for 2-hour intervals
+    # Set up scheduler for daily runs
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(agent.scan_and_process, 'interval', hours=2)
+    scheduler.add_job(agent.scan_and_process, 'interval', hours=24)
     
     try:
         scheduler.start()
-        print("Agent started. Scanning every 2 hours...")
+        print("Agent started. Scanning GitHub daily...")
         # Run initial scan
         await agent.scan_and_process()
         # Keep running
